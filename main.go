@@ -6,7 +6,6 @@ import (
 	"log"
 
 	coreV1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"godogs-k8s-acceptance/pkg/k8s"
@@ -23,8 +22,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println(compliantPod.Spec.Containers[0].Resources.Limits)
-	compliantPod.Spec.Containers[0].Resources.Limits[coreV1.ResourceMemory] = resource.Quantity{}
+	k8s.RemoveLimitFromContainer(compliantPod, coreV1.ResourceMemory, 0)
 	fmt.Println(compliantPod.Spec.Containers[0].Resources.Limits)
 
 	applyOpResult, err := k8sClient.CoreV1().Pods(compliantPod.Namespace).Create(context.Background(), compliantPod, metaV1.CreateOptions{})

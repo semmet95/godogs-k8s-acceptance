@@ -5,8 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"sigs.k8s.io/yaml"
-	"k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -29,19 +27,4 @@ func GetKubernetesClient() (*kubernetes.Clientset, error) {
 	}
 
 	return clientset, nil
-}
-
-func LoadPodFromYaml(yamlPath string) (*v1.Pod, error) {
-	yamlFile, err := os.ReadFile(yamlPath)
-	if err != nil {
-		return nil, fmt.Errorf("error reading yaml file: %v", err)
-	}
-
-	var pod v1.Pod
-	err = yaml.Unmarshal(yamlFile, &pod)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing yaml file: %v", err)
-	}
-
-	return &pod, nil
 }
