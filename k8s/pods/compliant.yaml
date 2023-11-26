@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: compliant-pod
+  namespace: acceptance-tests
+spec:
+  containers:
+  - name: busybox
+    image: busybox
+    resources:
+      limits:
+        cpu: "50m"
+        memory: "256Mi"
+    command: ["sh", "-c", "echo 'Hello, Kubernetes!' >> /var/hello.txt"]
