@@ -23,7 +23,8 @@ func main() {
 	}
 
 	k8s.RemoveLimitFromContainer(compliantPod, coreV1.ResourceMemory, 0)
-	fmt.Println(compliantPod.Spec.Containers[0].Resources.Limits)
+	k8s.SetContainerUserRoot(compliantPod, 0)
+	k8s.SetPodNamespace(compliantPod, "kube-system")
 
 	applyOpResult, err := k8sClient.CoreV1().Pods(compliantPod.Namespace).Create(context.Background(), compliantPod, metaV1.CreateOptions{})
 	if err != nil {

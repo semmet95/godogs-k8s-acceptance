@@ -5,7 +5,6 @@ import (
 	"os"
 
 	coreV1 "k8s.io/api/core/v1"
-	//"k8s.io/apimachinery/pkg/api/resource"
 	"sigs.k8s.io/yaml"
 )
 
@@ -24,6 +23,19 @@ func LoadPodFromYaml(yamlPath string) (*coreV1.Pod, error) {
 	return &pod, nil
 }
 
+func ApplyPodManifest(pod *coreV1.Pod) (error) {
+	return nil
+}
+
 func RemoveLimitFromContainer(pod *coreV1.Pod, resourceType coreV1.ResourceName, containerIndex int) {
 	delete(pod.Spec.Containers[containerIndex].Resources.Limits, resourceType)
+}
+
+func SetPodNamespace(pod *coreV1.Pod, namespace string) {
+	pod.SetNamespace(namespace)
+}
+
+func SetContainerUserRoot(pod *coreV1.Pod, containerIndex int) {
+	rootUser := int64(0)
+	pod.Spec.Containers[containerIndex].SecurityContext = &coreV1.SecurityContext{ RunAsUser: &rootUser }
 }
