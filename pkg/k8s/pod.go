@@ -1,10 +1,12 @@
 package k8s
 
 import (
+	"context"
 	"fmt"
 	"os"
 
 	coreV1 "k8s.io/api/core/v1"
+	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 )
 
@@ -24,6 +26,11 @@ func LoadPodFromYaml(yamlPath string) (*coreV1.Pod, error) {
 }
 
 func ApplyPodManifest(pod *coreV1.Pod) (error) {
+	_, err := k8sClient.CoreV1().Pods(pod.Namespace).Create(context.Background(), pod, metaV1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 

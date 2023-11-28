@@ -1,18 +1,15 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"log"
 
 	coreV1 "k8s.io/api/core/v1"
-	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"godogs-k8s-acceptance/pkg/k8s"
 )
 
 func main() {
-	k8sClient, err := k8s.GetKubernetesClient()
+	err := k8s.InitKubernetesClient()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -26,10 +23,8 @@ func main() {
 	k8s.SetContainerUserRoot(compliantPod, 0)
 	k8s.SetPodNamespace(compliantPod, "kube-system")
 
-	applyOpResult, err := k8sClient.CoreV1().Pods(compliantPod.Namespace).Create(context.Background(), compliantPod, metaV1.CreateOptions{})
+	err = k8s.ApplyPodManifest(compliantPod)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Printf("apply result is: %v", applyOpResult)
 }
