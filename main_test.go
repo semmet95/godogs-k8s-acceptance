@@ -44,7 +44,7 @@ func thereShouldBeRemaining(ctx context.Context, remaining int) error {
   return nil
 }
 
-func TestFeatures(t *testing.T) {
+func TestJsPolicies(t *testing.T) {  
   suite := godog.TestSuite{
     ScenarioInitializer: InitializeScenario,
     Options: &godog.Options{

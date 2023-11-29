@@ -25,7 +25,7 @@ func LoadPodFromYaml(yamlPath string) (*coreV1.Pod, error) {
 	return &pod, nil
 }
 
-func ApplyPodManifest(pod *coreV1.Pod) (error) {
+func ApplyPodManifest(pod *coreV1.Pod) error {
 	_, err := k8sClient.CoreV1().Pods(pod.Namespace).Create(context.Background(), pod, metaV1.CreateOptions{})
 	if err != nil {
 		return err
@@ -44,5 +44,19 @@ func SetPodNamespace(pod *coreV1.Pod, namespace string) {
 
 func SetContainerUserRoot(pod *coreV1.Pod, containerIndex int) {
 	rootUser := int64(0)
-	pod.Spec.Containers[containerIndex].SecurityContext = &coreV1.SecurityContext{ RunAsUser: &rootUser }
+	pod.Spec.Containers[containerIndex].SecurityContext = &coreV1.SecurityContext{RunAsUser: &rootUser}
+}
+
+func GetPodsInNamespace(namespace string) ([]string, error) {
+	pods, err := k8sClient.CoreV1().Pods(namespace).List(context.Background(), metaV1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	var podNames []string
+	for _, pod := range pods.Items {
+		podNames = append(podNames, pod.Name)
+	}
+
+	return podNames, nil
 }
