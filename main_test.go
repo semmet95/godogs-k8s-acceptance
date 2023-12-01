@@ -69,6 +69,17 @@ func podShouldBeInNamespace(ctx context.Context) (context.Context, error) {
 	return ctx, errors.New("pod not found in the namespace")
 }
 
+func setUserForContainer(ctx context.Context, user, containerIdx int64) (context.Context, error) {
+	k8sPod, ok := ctx.Value(pod{}).(*coreV1.Pod)
+	if !ok {
+		return ctx, errors.New("there is no pod set to apply")
+	}
+
+	k8s.SetContainerUser(k8sPod, 0, 0)
+
+	return ctx, nil
+}
+
 func TestJsPolicies(t *testing.T) {
 	suite := godog.TestSuite{
 		ScenarioInitializer: InitializeScenario,
@@ -90,7 +101,10 @@ func TestJsPolicies(t *testing.T) {
 }
 
 func InitializeScenario(sc *godog.ScenarioContext) {
+	
+
 	sc.Given(`^I create a pod manifest with name ([a-z0-9][-a-z0-9]*[a-z0-9]?) in namespace ([a-z0-9][-a-z0-9]*[a-z0-9]?) that is compliant with all policies enforced$`, createPodCompliantWithAllPolicies)
+	sc.Step(`^I set the user of container indexed (\d+) as (\d+) i.e., root$`, setUserForContainer)
 	sc.When(`^I apply the pod manifest$`, applyPodManifest)
 	sc.Then(`^the pod should be created in the namespace$`, podShouldBeInNamespace)
 }

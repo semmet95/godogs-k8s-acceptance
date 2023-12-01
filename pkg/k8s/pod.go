@@ -45,9 +45,8 @@ func SetPodNamespace(pod *coreV1.Pod, namespace string) {
 	pod.SetNamespace(namespace)
 }
 
-func SetContainerUserRoot(pod *coreV1.Pod, containerIndex int) {
-	rootUser := int64(0)
-	pod.Spec.Containers[containerIndex].SecurityContext = &coreV1.SecurityContext{RunAsUser: &rootUser}
+func SetContainerUser(pod *coreV1.Pod, user, containerIndex int64) {
+	pod.Spec.Containers[containerIndex].SecurityContext = &coreV1.SecurityContext{RunAsUser: &user}
 }
 
 func GetPodsInNamespace(namespace string) ([]string, error) {
