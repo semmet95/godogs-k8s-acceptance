@@ -10,7 +10,7 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-func LoadPodFromYaml(yamlPath string) (*coreV1.Pod, error) {
+func LoadPodFromYaml(yamlPath, podName, podNamespace string) (*coreV1.Pod, error) {
 	yamlFile, err := os.ReadFile(yamlPath)
 	if err != nil {
 		return nil, fmt.Errorf("error reading yaml file: %v", err)
@@ -22,11 +22,14 @@ func LoadPodFromYaml(yamlPath string) (*coreV1.Pod, error) {
 		return nil, fmt.Errorf("error parsing yaml file: %v", err)
 	}
 
+	pod.SetName(podName)
+	pod.SetNamespace(podNamespace)
+
 	return &pod, nil
 }
 
-func ApplyPodManifest(pod *coreV1.Pod) error {
-	_, err := k8sClient.CoreV1().Pods(pod.Namespace).Create(context.Background(), pod, metaV1.CreateOptions{})
+func ApplyPodManifest(pod *coreV1.Pod) (error) {
+	_, err := k8sClient.CoreV1().Pods(pod.GetNamespace()).Create(context.Background(), pod, metaV1.CreateOptions{})
 	if err != nil {
 		return err
 	}

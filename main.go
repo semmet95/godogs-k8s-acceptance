@@ -15,7 +15,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	compliantPod, err := k8s.LoadPodFromYaml("./k8s/pods/compliant.yaml")
+	compliantPod, err := k8s.LoadPodFromYaml("./k8s/pods/compliant.yaml", "compliant-pod", "acceptance-tests")
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -11,4 +11,4 @@ spec:
       limits:
         cpu: "50m"
         memory: "256Mi"
-    command: ["sh", "-c", "echo 'Hello, Kubernetes!' >> /var/hello.txt"]
+    command: ["sh", "-c", "echo 'Hello, Kubernetes!' >> /var/hello.txt; sleep inf"]

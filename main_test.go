@@ -1,66 +1,96 @@
 package main
 
 import (
-  "context"
-  "errors"
-  "fmt"
-  "testing"
+	"context"
+	"errors"
+	"log"
+	"strings"
+	"testing"
 
-  "github.com/cucumber/godog"
+	"github.com/cucumber/godog"
+	coreV1 "k8s.io/api/core/v1"
+
+	"godogs-k8s-acceptance/pkg/k8s"
 )
 
-// godogsCtxKey is the key used to store the available godogs in the context.Context.
-type godogsCtxKey struct{}
+type podName struct{}
+type podNamespace struct{}
+type pod struct{}
 
-func thereAreGodogs(ctx context.Context, available int) (context.Context, error) {
-  return context.WithValue(ctx, godogsCtxKey{}, available), nil
+func createPodCompliantWithAllPolicies(ctx context.Context, k8sPodName, k8sPodNamespace string) (context.Context, error) {
+	k8sPod, err := k8s.LoadPodFromYaml("./k8s/pods/compliant.yaml", k8sPodName, k8sPodNamespace)
+	if err != nil {
+		return ctx, err
+	}
+
+	return context.WithValue(ctx, pod{}, k8sPod), nil
 }
 
-func iEat(ctx context.Context, num int) (context.Context, error) {
-  available, ok := ctx.Value(godogsCtxKey{}).(int)
-  if !ok {
-    return ctx, errors.New("there are no godogs available")
-  }
+func applyPodManifest(ctx context.Context) (context.Context, error) {
+	k8sPod, ok := ctx.Value(pod{}).(*coreV1.Pod)
+	if !ok {
+		return ctx, errors.New("there is no pod set to apply")
+	}
 
-  if available < num {
-    return ctx, fmt.Errorf("you cannot eat %d godogs, there are %d available", num, available)
-  }
+	err := k8s.ApplyPodManifest(k8sPod)
+	if err != nil {
+		return ctx, err
+	}
 
-  available -= num
-
-  return context.WithValue(ctx, godogsCtxKey{}, available), nil
+	return context.WithValue(
+		context.WithValue(ctx, podName{}, k8sPod.GetName()),
+		podNamespace{},
+		k8sPod.GetNamespace(),
+	), nil
 }
 
-func thereShouldBeRemaining(ctx context.Context, remaining int) error {
-  available, ok := ctx.Value(godogsCtxKey{}).(int)
-  if !ok {
-    return errors.New("there are no godogs available")
-  }
+func podShouldBeInNamespace(ctx context.Context) (context.Context, error) {
+	k8sPodName, ok := ctx.Value(podName{}).(string)
+	if !ok {
+		return ctx, errors.New("pod name is not set")
+	}
 
-  if available != remaining {
-    return fmt.Errorf("expected %d godogs to be remaining, but there is %d", remaining, available)
-  }
+	k8sPodNamespace, ok := ctx.Value(podNamespace{}).(string)
+	if !ok {
+		return ctx, errors.New("pod namespace is not set")
+	}
 
-  return nil
+	namespacePodNames, err := k8s.GetPodsInNamespace(k8sPodNamespace)
+	if err != nil {
+		return ctx, err
+	}
+
+	for _, namespacePodName := range namespacePodNames {
+		if strings.Compare(k8sPodName, namespacePodName) == 0 {
+			return ctx, nil
+		}
+	}
+
+	return ctx, errors.New("pod not found in the namespace")
 }
 
-func TestJsPolicies(t *testing.T) {  
-  suite := godog.TestSuite{
-    ScenarioInitializer: InitializeScenario,
-    Options: &godog.Options{
-      Format:   "pretty",
-      Paths:    []string{"features"},
-      TestingT: t, // Testing instance that will run subtests.
-    },
-  }
+func TestJsPolicies(t *testing.T) {
+	suite := godog.TestSuite{
+		ScenarioInitializer: InitializeScenario,
+		Options: &godog.Options{
+			Format:   "pretty",
+			Paths:    []string{"features"},
+			TestingT: t, // Testing instance that will run subtests.
+		},
+	}
 
-  if suite.Run() != 0 {
-    t.Fatal("non-zero status returned, failed to run feature tests")
-  }
+	err := k8s.InitKubernetesClient()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if suite.Run() != 0 {
+		t.Fatal("non-zero status returned, failed to run feature tests")
+	}
 }
 
 func InitializeScenario(sc *godog.ScenarioContext) {
-  sc.Given(`^there are (\d+) godogs$`, thereAreGodogs)
-  sc.When(`^I eat (\d+)$`, iEat)
-  sc.Then(`^there should be (\d+) remaining$`, thereShouldBeRemaining)
+	sc.Given(`^I create a pod manifest with name ([a-z0-9][-a-z0-9]*[a-z0-9]?) in namespace ([a-z0-9][-a-z0-9]*[a-z0-9]?) that is compliant with all policies enforced$`, createPodCompliantWithAllPolicies)
+	sc.When(`^I apply the pod manifest$`, applyPodManifest)
+	sc.Then(`^the pod should be created in the namespace$`, podShouldBeInNamespace)
 }
