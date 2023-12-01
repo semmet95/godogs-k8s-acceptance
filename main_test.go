@@ -13,6 +13,7 @@ import (
 	"godogs-k8s-acceptance/pkg/k8s"
 )
 
+type podApplyError struct{}
 type podName struct{}
 type podNamespace struct{}
 type pod struct{}
@@ -33,15 +34,12 @@ func applyPodManifest(ctx context.Context) (context.Context, error) {
 	}
 
 	err := k8s.ApplyPodManifest(k8sPod)
-	if err != nil {
-		return ctx, err
-	}
 
-	return context.WithValue(
-		context.WithValue(ctx, podName{}, k8sPod.GetName()),
-		podNamespace{},
-		k8sPod.GetNamespace(),
-	), nil
+	ctx = context.WithValue(ctx, podName{}, k8sPod.GetName())
+	ctx = context.WithValue(ctx, podNamespace{}, k8sPod.GetNamespace())
+	ctx = context.WithValue(ctx, podApplyError{}, err)
+
+	return ctx, nil
 }
 
 func podShouldBeInNamespace(ctx context.Context) (context.Context, error) {
@@ -80,6 +78,19 @@ func setUserForContainer(ctx context.Context, user, containerIdx int64) (context
 	return ctx, nil
 }
 
+func podShouldBeBlockedWithError(ctx context.Context, body *godog.DocString) (context.Context, error) {
+	k8spodApplyError, ok := ctx.Value(podApplyError{}).(error)
+	if !ok {
+		return ctx, errors.New("pod apply error is not set")
+	}
+
+	if(strings.Contains(k8spodApplyError.Error(), body.Content)) {
+		return ctx, nil
+	} else {
+		return ctx, errors.New("pod apply error did not match, found error: " + k8spodApplyError.Error())
+	}
+}
+
 func TestJsPolicies(t *testing.T) {
 	suite := godog.TestSuite{
 		ScenarioInitializer: InitializeScenario,
@@ -101,10 +112,9 @@ func TestJsPolicies(t *testing.T) {
 }
 
 func InitializeScenario(sc *godog.ScenarioContext) {
-	
-
 	sc.Given(`^I create a pod manifest with name ([a-z0-9][-a-z0-9]*[a-z0-9]?) in namespace ([a-z0-9][-a-z0-9]*[a-z0-9]?) that is compliant with all policies enforced$`, createPodCompliantWithAllPolicies)
 	sc.Step(`^I set the user of container indexed (\d+) as (\d+) i.e., root$`, setUserForContainer)
 	sc.When(`^I apply the pod manifest$`, applyPodManifest)
 	sc.Then(`^the pod should be created in the namespace$`, podShouldBeInNamespace)
+	sc.Then(`^the pod should be blocked with error:$`, podShouldBeBlockedWithError)
 }
