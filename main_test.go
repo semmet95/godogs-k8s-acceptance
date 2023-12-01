@@ -72,7 +72,29 @@ func setUserForContainer(ctx context.Context, user, containerIdx int64) (context
 		return ctx, errors.New("there is no pod set to apply")
 	}
 
-	k8s.SetContainerUser(k8sPod, 0, 0)
+	k8s.SetContainerUser(k8sPod, user, containerIdx)
+
+	return ctx, nil
+}
+
+func removeMemoryLimitOfContainer(ctx context.Context, containerIdx int64) (context.Context, error) {
+	k8sPod, ok := ctx.Value(pod{}).(*coreV1.Pod)
+	if !ok {
+		return ctx, errors.New("there is no pod set to apply")
+	}
+
+	k8s.RemoveLimitFromContainer(k8sPod, coreV1.ResourceMemory, containerIdx)
+
+	return ctx, nil
+}
+
+func setPodNamespace(ctx context.Context, namespace string) (context.Context, error) {
+	k8sPod, ok := ctx.Value(pod{}).(*coreV1.Pod)
+	if !ok {
+		return ctx, errors.New("there is no pod set to apply")
+	}
+
+	k8s.SetPodNamespace(k8sPod, namespace)
 
 	return ctx, nil
 }
@@ -114,6 +136,8 @@ func InitializeScenario(sc *godog.ScenarioContext) {
 
 	sc.Given(`^I create a pod manifest with name ([a-z0-9][-a-z0-9]*[a-z0-9]?) in namespace ([a-z0-9][-a-z0-9]*[a-z0-9]?) that is compliant with all policies enforced$`, createPodCompliantWithAllPolicies)
 	sc.Step(`^I set the user of container indexed (\d+) as (\d+) i.e., root$`, setUserForContainer)
+	sc.Step(`^I remove the memory limit of container indexed (\d+)$`, removeMemoryLimitOfContainer)
+	sc.Step(`^I set the pod namespace as ([a-z0-9][-a-z0-9]*[a-z0-9]?)$`, setPodNamespace)
 	sc.When(`^I apply the pod manifest$`, applyPodManifest)
 	sc.Then(`^the pod should be created in the namespace$`, podShouldBeInNamespace)
 	sc.Then(`^the pod should be blocked with error:$`, podShouldBeBlockedWithError)

@@ -38,16 +38,16 @@ func ApplyPodManifest(pod *coreV1.Pod) error {
 	return nil
 }
 
-func RemoveLimitFromContainer(pod *coreV1.Pod, resourceType coreV1.ResourceName, containerIndex int) {
-	delete(pod.Spec.Containers[containerIndex].Resources.Limits, resourceType)
+func RemoveLimitFromContainer(pod *coreV1.Pod, resourceType coreV1.ResourceName, containerIdx int64) {
+	delete(pod.Spec.Containers[containerIdx].Resources.Limits, resourceType)
 }
 
 func SetPodNamespace(pod *coreV1.Pod, namespace string) {
 	pod.SetNamespace(namespace)
 }
 
-func SetContainerUser(pod *coreV1.Pod, user, containerIndex int64) {
-	pod.Spec.Containers[containerIndex].SecurityContext = &coreV1.SecurityContext{RunAsUser: &user}
+func SetContainerUser(pod *coreV1.Pod, user, containerIdx int64) {
+	pod.Spec.Containers[containerIdx].SecurityContext = &coreV1.SecurityContext{RunAsUser: &user}
 }
 
 func GetPodsInNamespace(namespace string) ([]string, error) {
