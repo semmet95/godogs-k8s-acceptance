@@ -39,3 +39,16 @@ Feature: jsPolicies
       """
       - Field metadata.namespace is not allowed to be: default | kube-system
       """
+
+  Scenario: Block deployment of a pod with a container with user set to root and with memory limit removed in the namespace kube-system
+    Given I create a pod manifest with name bad-pod-2 in namespace acceptance-tests that is compliant with all policies enforced
+    And I set the user of container indexed 0 as 0 i.e., root
+    And I remove the memory limit of container indexed 0
+    And I set the pod namespace as kube-system
+    When I apply the pod manifest
+    Then the pod should be blocked with error:
+      """
+      - Field metadata.namespace is not allowed to be: default | kube-system
+      - Field spec.containers[0].securityContext is not allowed.
+      - Memory limit not defined for spec.containers[0]
+      """
