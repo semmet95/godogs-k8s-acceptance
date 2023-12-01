@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	coreV1 "k8s.io/api/core/v1"
 	metaV1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,7 +29,7 @@ func LoadPodFromYaml(yamlPath, podName, podNamespace string) (*coreV1.Pod, error
 	return &pod, nil
 }
 
-func ApplyPodManifest(pod *coreV1.Pod) (error) {
+func ApplyPodManifest(pod *coreV1.Pod) error {
 	_, err := k8sClient.CoreV1().Pods(pod.GetNamespace()).Create(context.Background(), pod, metaV1.CreateOptions{})
 	if err != nil {
 		return err
@@ -61,4 +62,33 @@ func GetPodsInNamespace(namespace string) ([]string, error) {
 	}
 
 	return podNames, nil
+}
+
+func IsPodInNamespace(k8sPodName, namespace string) (bool, error) {
+	podNames, err := GetPodsInNamespace(namespace)
+	if err != nil {
+		return false, err
+	}
+
+	for _, podName := range podNames {
+		if strings.Compare(k8sPodName, podName) == 0 {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func DeletePodIfExists(k8sPodName, namespace string) error {
+	podExists, err := IsPodInNamespace(k8sPodName, namespace)
+	if err != nil {
+		return err
+	}
+
+	if podExists {
+		err = k8sClient.CoreV1().Pods(namespace).Delete(context.Background(), k8sPodName, metaV1.DeleteOptions{})
+		return err
+	}
+
+	return nil
 }
