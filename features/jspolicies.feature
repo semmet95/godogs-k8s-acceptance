@@ -31,7 +31,7 @@ Feature: jsPolicies
       - Memory limit not defined for spec.containers[0]
       """
 
-  Scenario: Block deployment of a pod with a container in the namespace kube-system
+  Scenario: Block deployment of a pod in the namespace kube-system
     Given I create a pod manifest with name bad-pod-2 in namespace acceptance-tests that is compliant with all policies enforced
     And I set the pod namespace as kube-system
     When I apply the pod manifest
